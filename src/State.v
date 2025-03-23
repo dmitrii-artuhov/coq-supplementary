@@ -82,7 +82,6 @@ Section S.
   Proof.
     split.
     - intros.
-      (* dependent destruction H. *)
       inversion H. subst.
         + unfold update in *. apply st_binds_hd.
         + subst. unfold update in *. apply st_binds_tl.
