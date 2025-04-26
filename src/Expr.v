@@ -454,18 +454,52 @@ Module SmallStep.
   Qed.
 
   Lemma normal_form_is_not_a_value : ~ forall (e : expr), normal_form e -> is_value e.
-  Proof. admit. Admitted.
+  Proof. 
+    remember ((Nat 1) [/] (Nat 0)) as CE.
+    assert (normal_form CE) as NF.
+      - intro. intro. inv H. inversion H0.
+        + inversion LEFT.
+        + inversion RIGHT.
+        + inversion EVAL. inversion VALB. subst. contradiction.
+      - intro. specialize (H CE). apply H in NF. inversion NF. rewrite HeqCE in H0. inversion H0. 
+  Qed.
+        
   
   Lemma ss_nondeterministic : ~ forall (e e' e'' : expr) (s : state Z), s |- e --> e' -> s |- e --> e'' -> e' = e''.
-  Proof. admit. Admitted.
+  Proof. 
+    intro. 
+    (* x + y, x = 0, y = 1 *)
+    remember (Var (Id 0)) as l.
+    remember (Var (Id 1)) as r.
+    remember ([(Id 0, Z.zero) ; (Id 1, Z.one)] : state Z) as state.
+    remember (H (l [+] r) ((Nat 0) [+] r) (l [+] (Nat 1)) state).
+    assert ((state) |- l [+] r --> ((Nat 0) [+] r)).
+      - constructor. rewrite Heql. rewrite Heqstate. constructor. constructor.
+      - assert ((state) |- l [+] r --> (l [+] (Nat 1))).
+        + constructor. rewrite Heqr. rewrite Heqstate. constructor. constructor. intuition.
+          * inversion H1.
+          * constructor.
+        + remember (e H0 H1). inversion e0. subst. inversion H3.
+  Qed.
   
   Lemma ss_deterministic_step (e e' : expr)
                          (s    : state Z)
                          (z z' : Z)
                          (H1   : s |- e --> (Nat z))
                          (H2   : s |- e --> e') : e' = Nat z.
-  Proof. admit. Admitted.
-  
+  Proof. 
+    inversion H1; subst; inversion H2; subst.
+      - remember (state_deterministic Z s i z z0 VAL VAL0). rewrite e. reflexivity.
+      - inversion H2. subst.
+        + inversion LEFT.
+        + inversion RIGHT.
+      - inversion H2.
+        + inversion LEFT.
+        + inversion RIGHT.
+      - inversion H2.
+        + remember (eval_deterministic (Bop op (Nat zl) (Nat zr)) s z0 z EVAL0 EVAL). rewrite e. reflexivity.
+  Qed.
+      
   Lemma ss_eval_stops_at_value (st : state Z) (e e': expr) (Heval: st |- e -->> e') : is_value e'.
   Proof. admit. Admitted.
 
