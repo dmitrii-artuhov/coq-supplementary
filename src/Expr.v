@@ -402,10 +402,19 @@ Module SmallStep.
   #[export] Hint Constructors ss_eval : core.
 
   Lemma ss_eval_reachable s e e' (HE: s |- e -->> e') : s |- e ~~> e'.
-  Proof. admit. Admitted.
+  Proof. 
+    induction HE; subst.
+      - apply reach_base.
+      - apply reach_step with e'; assumption.
+  Qed.
 
   Lemma ss_reachable_eval s e z (HR: s |- e ~~> (Nat z)) : s |- e -->> (Nat z).
-  Proof.  admit. Admitted.
+  Proof. 
+    remember (Nat z) as ze.
+    induction HR.
+      - rewrite Heqze. apply se_Stop.
+      - subst. eauto.
+  Qed.
 
   #[export] Hint Resolve ss_eval_reachable : core.
   #[export] Hint Resolve ss_reachable_eval : core.
@@ -414,19 +423,35 @@ Module SmallStep.
                      (H1: s |- e  -->> e')
                      (H2: s |- e' -->  e'') :
     s |- e -->> e''.
-  Proof. admit. Admitted.
+  Proof. 
+    induction H1.
+      - inversion H2.
+      - apply se_Step with e'.
+        + assumption.
+        + specialize (IHss_eval H2). assumption.
+  Qed.
   
   Lemma ss_reachable_trans s e e' e''
                           (H1: s |- e  ~~> e')
                           (H2: s |- e' ~~> e'') :
     s |- e ~~> e''.
-  Proof. admit. Admitted.
+  Proof. 
+    induction H1.
+      - inversion H2.
+        + rewrite H in H2. subst. apply reach_base.
+        + apply reach_step with e'; assumption.
+      - apply reach_step with e'.
+        + assumption.
+        + specialize (IHss_reachable H2). assumption.
+  Qed.
           
   Definition normal_form (e : expr) : Prop :=
     forall s, ~ exists e', (s |- e --> e').   
 
   Lemma value_is_normal_form (e : expr) (HV: is_value e) : normal_form e.
-  Proof. admit. Admitted.
+  Proof. 
+    intro. intro. inversion HV. subst. destruct H. inversion H.
+  Qed.
 
   Lemma normal_form_is_not_a_value : ~ forall (e : expr), normal_form e -> is_value e.
   Proof. admit. Admitted.
