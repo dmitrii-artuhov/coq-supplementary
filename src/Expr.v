@@ -290,7 +290,16 @@ Lemma variable_relevance (e : expr) (s1 s2 : state Z) (z : Z)
           equivalent_states s1 s2 id)
       (EV : [| e |] s1 => z) :
   [| e |] s2 => z.
-Proof. admit. Admitted.
+Proof. 
+  intros.
+  generalize dependent z.
+  induction e.
+    - intros. inversion EV. subst. apply bs_Nat.
+    - intros. inversion EV. subst. apply FV in VAR.
+      + constructor. assumption.
+      + apply v_Var.
+    - intros. inversion EV; subst; econstructor; eauto.
+Qed.
 
 Definition equivalent (e1 e2 : expr) : Prop :=
   forall (n : Z) (s : state Z), 
@@ -298,14 +307,25 @@ Definition equivalent (e1 e2 : expr) : Prop :=
 Notation "e1 '~~' e2" := (equivalent e1 e2) (at level 42, no associativity).
 
 Lemma eq_refl (e : expr): e ~~ e.
-Proof. admit. Admitted.
+Proof. 
+  unfold equivalent. intros. reflexivity.
+Qed.
 
 Lemma eq_symm (e1 e2 : expr) (EQ : e1 ~~ e2): e2 ~~ e1.
-Proof. admit. Admitted.
+Proof. 
+  unfold equivalent. unfold equivalent in EQ. intros. specialize (EQ n s). symmetry. assumption.
+Qed.
 
 Lemma eq_trans (e1 e2 e3 : expr) (EQ1 : e1 ~~ e2) (EQ2 : e2 ~~ e3):
   e1 ~~ e3.
-Proof. admit. Admitted.
+Proof. 
+  unfold equivalent in EQ1.
+  unfold equivalent in EQ2.
+  unfold equivalent.
+  intros. split.
+    - intros. apply EQ2. apply EQ1. assumption.
+    - intros. apply EQ1. apply EQ2. assumption.
+Qed.
 
 Inductive Context : Type :=
 | Hole : Context
