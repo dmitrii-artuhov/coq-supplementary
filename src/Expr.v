@@ -501,10 +501,23 @@ Module SmallStep.
   Qed.
       
   Lemma ss_eval_stops_at_value (st : state Z) (e e': expr) (Heval: st |- e -->> e') : is_value e'.
-  Proof. admit. Admitted.
+  Proof. 
+    induction Heval.
+      - constructor.
+      - assumption.
+  Qed.
 
   Lemma ss_subst s C e e' (HR: s |- e ~~> e') : s |- (C <~ e) ~~> (C <~ e').
-  Proof. admit. Admitted.
+  Proof. 
+    induction C.
+      - auto.
+      - simpl. induction IHC.
+        + auto.
+        + simpl. eauto.
+      - simpl. induction IHC.
+        + auto.
+        + simpl. eauto.
+  Qed.
    
   Lemma ss_subst_binop s e1 e2 e1' e2' op (HR1: s |- e1 ~~> e1') (HR2: s |- e2 ~~> e2') :
     s |- (Bop op e1 e2) ~~> (Bop op e1' e2').
