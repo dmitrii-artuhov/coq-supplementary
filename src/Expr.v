@@ -179,16 +179,33 @@ where "[| e |] st => z" := (eval e st z).
 
 Module SmokeTest.
 
-  Lemma zero_always x (s : state Z) : [| Var x [*] Nat 0 |] s => Z.zero.
-  Proof. admit. Admitted.
+  Lemma zero_always x (s : state Z) (v : Z) (EVALH: s / x => v) : [| Var x [*] Nat 0 |] s => Z.zero.
+  Proof.
+    remember (bs_Nat s Z.zero).
+    remember (bs_Var s x v EVALH).
+    remember (bs_Mul s (Var x) (Nat 0) v 0%Z e0 e). (* e1 *)
+    clear Heqe1.
+    rewrite (Z.mul_0_r v) in e1.
+    apply e1.
+  Qed.
   
   Lemma nat_always n (s : state Z) : [| Nat n |] s => n.
-  Proof. admit. Admitted.
+  Proof.
+    intros.
+    apply bs_Nat.
+  Qed.
   
   Lemma double_and_sum (s : state Z) (e : expr) (z : Z)
         (HH : [| e [*] (Nat 2) |] s => z) :
     [| e [+] e |] s => z.
-  Proof. admit. Admitted.
+  Proof.
+    intros.
+    inversion HH. subst.
+    inversion VALB. subst.
+    assert ((za * 2)%Z = (za + za)%Z). intuition.
+    rewrite H.
+    apply bs_Add; assumption.
+  Qed.
   
 End SmokeTest.
 
@@ -203,7 +220,14 @@ where "e1 << e2" := (subexpr e1 e2).
 
 Lemma strictness (e e' : expr) (HSub : e' << e) (st : state Z) (z : Z) (HV : [| e |] st => z) :
   exists z' : Z, [| e' |] st => z'.
-Proof. admit. Admitted.
+Proof. 
+  intros.
+  generalize dependent z.
+  induction HSub; intros.
+    - exists z. assumption.
+    - inversion HV; subst; apply (IHHSub za); apply VALA.
+    - inversion HV; subst; apply (IHHSub zb); apply VALB.
+Qed.
 
 Reserved Notation "x ? e" (at level 0).
 
@@ -223,7 +247,14 @@ Lemma defined_expression
       (RED : [| e |] s => z)
       (ID  : id ? e) :
   exists z', s / id => z'.
-Proof. admit. Admitted.
+Proof.
+  intros.
+  generalize dependent z.
+  induction e; intros; inversion ID; subst.
+    - inversion RED. subst. exists z. assumption.
+    - inversion RED; subst; destruct H3; eauto.
+Qed.
+
 
 (* If a variable in expression is undefined in some state, then the expression
    is undefined is that state as well
@@ -231,15 +262,26 @@ Proof. admit. Admitted.
 Lemma undefined_variable (e : expr) (s : state Z) (id : id)
       (ID : id ? e) (UNDEF : forall (z : Z), ~ (s / id => z)) :
   forall (z : Z), ~ ([| e |] s => z).
-Proof. admit. Admitted.
+Proof.
+  generalize dependent UNDEF.
+  induction e; intros; inversion ID; subst.
+  - unfold not. intros. inversion H. subst. specialize (UNDEF z). contradiction.
+  - inversion H3; intuition; inversion H0; eauto.
+Qed.
 
 (* The evaluation relation is deterministic *)
 Lemma eval_deterministic (e : expr) (s : state Z) (z1 z2 : Z) 
       (E1 : [| e |] s => z1) (E2 : [| e |] s => z2) :
   z1 = z2.
-Proof. admit. Admitted.
+Proof.
+  generalize dependent z1.
+  generalize dependent z2.
+  induction e.
+    - intros. inversion E1. inversion E2. subst. reflexivity.
+    - intros. inversion E1. inversion E2. subst. remember (state_deterministic Z s i z1 z2). clear Heqe. specialize (e VAR). specialize (e VAR0). assumption.
+    - intros. inversion E1; inversion E2; subst; remember (IHe1 za VALA za0 VALA0); remember (IHe2 zb VALB zb0 VALB0); congruence.
+Qed.
 
-(* Equivalence of states w.r.t. an identifier *)
 Definition equivalent_states (s1 s2 : state Z) (id : id) :=
   forall z : Z, s1 /id => z <-> s2 / id => z.
 
