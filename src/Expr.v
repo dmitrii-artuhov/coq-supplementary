@@ -700,19 +700,21 @@ Module Renaming.
 
   Lemma renaming_inv (r : renaming) : exists (r' : renaming), renamings_inv r' r.
   Proof. 
-    destruct r as [f BH]. destruct BH eqn:H_eqn. destruct a. 
-    assert (Injective f) as IH.
-    - apply bijective_injective. assumption.
-    - exists (exist _ _ BH).
-      unfold renamings_inv. unfold rename_id. intros.
-      
-      rewrite <- IH.
-      + reflexivity.
-      + admit.
-  Admitted.
+    destruct r. destruct b. destruct a. 
+    assert (BH: Bijective x0).
+    - unfold Bijective. exists x. split; assumption. 
+    - exists (exist _ x0 BH).
+      unfold renamings_inv. simpl. intro. specialize (e x1). assumption.
+  Qed.
 
   Lemma renaming_inv2 (r : renaming) : exists (r' : renaming), renamings_inv r r'.
-  Proof. admit. Admitted.
+  Proof. 
+    destruct r. destruct b. destruct a. 
+    assert (BH: Bijective x0).
+    - unfold Bijective. exists x. split; assumption. 
+    - exists (exist _ x0 BH).
+      unfold renamings_inv. simpl. intro. specialize (e0 x1). assumption.
+  Qed.
 
   Fixpoint rename_expr (r : renaming) (e : expr) : expr :=
     match e with
