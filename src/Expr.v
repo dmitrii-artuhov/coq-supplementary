@@ -646,7 +646,39 @@ Module StaticSemantics.
 
   Lemma type_bool e (HT : e :-: Bool) :
     forall st z (HVal: [| e |] st => z), zbool z.
-  Proof. admit. Admitted.
+  Proof.
+    induction e; intros; inversion HT; subst.
+      - inversion HVal. subst. right. reflexivity.
+      - inversion HVal. subst. constructor. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+      - inversion HVal. subst. inversion BOOLA; inversion BOOLB; subst.
+        + constructor. reflexivity.
+        + right. reflexivity.
+        + right. simpl. reflexivity.
+        + right. reflexivity.
+      - inversion HVal. subst. inversion BOOLA; inversion BOOLB; subst.
+        + constructor. reflexivity.
+        + constructor. reflexivity.
+        + constructor. reflexivity.
+        + right. reflexivity.
+  Qed.
 
 End StaticSemantics.
 
