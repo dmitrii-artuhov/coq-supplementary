@@ -548,7 +548,20 @@ Module Renaming.
     (r         : Renaming.renaming)
     (c c'      : conf)
     (Hbs       : c == s ==> c') : (rename_conf r c) == rename r s ==> (rename_conf r c').
-  Proof. admit. Admitted.
+  Proof. 
+    dependent destruction r. 
+    dependent destruction b.
+    dependent induction Hbs; simpl.
+    - try eapply bs_Skip;        try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_Assign;      try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_Read;        try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_Write;       try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_Seq;         try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_If_True;     try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_If_False;    try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_While_True;  try rewrite <- Renaming.eval_renaming_invariance; eauto.
+    - try eapply bs_While_False; try rewrite <- Renaming.eval_renaming_invariance; eauto.
+  Qed.
   
   Lemma renaming_invariant_bs_inv
     (s         : stmt)
