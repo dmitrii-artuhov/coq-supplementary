@@ -526,11 +526,20 @@ Module Renaming.
     (r r' : Renaming.renaming)
     (Hinv : Renaming.renamings_inv r r')
     (s    : stmt) : rename r (rename r' s) = s.
-  Proof. admit. Admitted.
+  Proof. 
+    dependent induction s.
+    all: try simpl; eauto.
+    all: try rewrite Renaming.re_rename_expr; eauto.
+    all: try rewrite Hinv; eauto.
+    all: try rewrite IHs1; try rewrite IHs2; eauto.
+    all: try rewrite IHs; eauto.
+  Qed.
   
   Lemma rename_state_update_permute (st : state Z) (r : renaming) (x : id) (z : Z) :
     Renaming.rename_state r (st [ x <- z ]) = (Renaming.rename_state r st) [(Renaming.rename_id r x) <- z].
-  Proof. admit. Admitted.
+  Proof. 
+    dependent destruction r. simpl. auto.
+  Qed.
   
   #[export] Hint Resolve Renaming.eval_renaming_invariance : core.
 
@@ -547,6 +556,7 @@ Module Renaming.
     (c c'      : conf)
     (Hbs       : (rename_conf r c) == rename r s ==> (rename_conf r c')) : c == s ==> c'.
   Proof. admit. Admitted.
+
     
   Lemma renaming_invariant (s : stmt) (r : renaming) : s ~e~ (rename r s).
   Proof. admit. Admitted.
