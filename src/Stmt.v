@@ -439,27 +439,62 @@ Module SmallStep.
         (EXEC1 : c -- s --> c')
         (EXEC2 : c -- s --> c'') :
     c' = c''.
-  Proof. admit. Admitted.
+  Proof. 
+    dependent induction s;
+    dependent destruction EXEC1; dependent destruction EXEC2.
+    all: try by_eval_deterministic.
+    all: try eval_zero_not_one.
+    all: try reflexivity.
+    - specialize (IHs1 _ _ _ EXEC1 EXEC2). inversion IHs1. subst. reflexivity.
+    - specialize (IHs1 _ _ _ EXEC1 EXEC2). inversion IHs1.
+    - specialize (IHs1 _ _ _ EXEC1 EXEC2). inversion IHs1.
+    - specialize (IHs1 _ _ _ EXEC1 EXEC2). inversion IHs1. subst. reflexivity.
+  Qed.   
   
   Lemma ss_int_deterministic (c c' c'' : conf) (s : stmt)
         (STEP1 : c -- s -->> c') (STEP2 : c -- s -->> c'') :
     c' = c''.
-  Proof. admit. Admitted.
+  Proof. 
+    generalize dependent c''.
+    induction STEP1; intros.
+    - inversion STEP2; subst; remember (ss_int_step_deterministic s c _ _ H H0) as H2. inversion H2.
+      + reflexivity.
+      + inversion H2.
+    - inversion STEP2; subst; remember (ss_int_step_deterministic _ _ _ _ H H0) as H2.
+      + inversion H2.
+      + inversion H2. subst. specialize (IHSTEP1 c''0). specialize (IHSTEP1 H1). assumption.
+  Qed.
+
   
   Lemma ss_bs_base (s : stmt) (c c' : conf) (STEP : c -- s --> (None, c')) :
     c == s ==> c'.
-  Proof. admit. Admitted.
+  Proof. 
+    inversion STEP; subst; auto.
+  Qed.
 
   Lemma ss_ss_composition (c c' c'' : conf) (s1 s2 : stmt)
         (STEP1 : c -- s1 -->> c'') (STEP2 : c'' -- s2 -->> c') :
     c -- s1 ;; s2 -->> c'. 
-  Proof. admit. Admitted.
+  Proof. 
+    dependent induction STEP1; intros.
+    - apply (ss_int_Step _ s2 _ c'0). constructor. assumption. assumption.
+    - eapply (ss_int_Step _ (s';; s2) _ c'0).
+      + specialize (IHSTEP1 STEP2). constructor. assumption.
+      + specialize (IHSTEP1 STEP2). assumption.
+  Qed.
   
   Lemma ss_bs_step (c c' c'' : conf) (s s' : stmt)
         (STEP : c -- s --> (Some s', c'))
         (EXEC : c' == s' ==> c'') :
     c == s ==> c''.
-  Proof. admit. Admitted.
+  Proof. 
+    generalize dependent c''.
+    dependent induction s; intros.
+    all: try dependent destruction STEP; subst.
+    all: try remember (ss_bs_base s1 c c' STEP); eauto.
+    - inversion EXEC. subst. specialize (IHs1 s1' STEP c'0 STEP1). eauto.
+    - inversion EXEC; inversion STEP; subst; eauto.
+  Qed.
   
   Theorem bs_ss_eq (s : stmt) (c c' : conf) :
     c == s ==> c' <-> c -- s -->> c'.
