@@ -242,26 +242,85 @@ End SmokeTest.
 (* Semantic equivalence is a congruence *)
 Lemma eq_congruence_seq_r (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   (s  ;; s1) ~~~ (s  ;; s2).
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *. intros c c'.
+  split.
+  - intro. inversion H; subst. specialize (EQ c'0 c'). apply bs_Seq with (c' := c'0).
+    + eassumption.
+    + apply EQ. assumption.
+  - intro. inversion H; subst. specialize (EQ c'0 c'). apply bs_Seq with (c' := c'0).
+    + assumption.
+    + apply EQ. assumption.
+Qed.
 
 Lemma eq_congruence_seq_l (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   (s1 ;; s) ~~~ (s2 ;; s).
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *. intros c c'.
+  split.
+  - intro. inversion H; subst. specialize (EQ c c'0). apply bs_Seq with (c' := c'0).
+    + apply EQ. assumption.
+    + eassumption.
+  - intro. inversion H; subst. specialize (EQ c c'0). apply bs_Seq with (c' := c'0).
+    + apply EQ. assumption.
+    + assumption.
+Qed.
 
 Lemma eq_congruence_cond_else
       (e : expr) (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   COND e THEN s  ELSE s1 END ~~~ COND e THEN s  ELSE s2 END.
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *. intros c c'.
+  split.
+  - intro. dependent destruction H.
+    + apply bs_If_True; assumption.
+    + apply bs_If_False. 
+      * assumption.  
+      * apply EQ. assumption.
+  - intro. dependent destruction H.
+    + apply bs_If_True; assumption.
+    + apply bs_If_False. 
+      * assumption.  
+      * apply EQ. assumption.
+Qed.
 
 Lemma eq_congruence_cond_then
       (e : expr) (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   COND e THEN s1 ELSE s END ~~~ COND e THEN s2 ELSE s END.
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *. intros c c'.
+  split.
+  - intro. dependent destruction H.
+    + apply bs_If_True. 
+      * assumption.
+      * apply EQ. assumption.
+    + apply bs_If_False; assumption.  
+  - intro. dependent destruction H.
+    + apply bs_If_True.
+      * assumption.
+      * apply EQ. assumption.
+    + apply bs_If_False; assumption.
+Qed.
 
 Lemma eq_congruence_while
       (e : expr) (s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   WHILE e DO s1 END ~~~ WHILE e DO s2 END.
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *. intros c c'.
+  split.
+  - intro; dependent induction H.
+    + eapply bs_While_True.
+      * assumption.
+      * apply EQ. eassumption.
+      * eapply IHbs_int2. eassumption. reflexivity.
+    + eapply bs_While_False; assumption.
+  - intro. dependent induction H.
+    + eapply bs_While_True.
+      * assumption.
+      * apply EQ. eassumption.
+      * eapply IHbs_int2. eassumption. reflexivity.
+    + apply bs_While_False; assumption.
+Qed.
 
 Lemma eq_congruence (e : expr) (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   ((s  ;; s1) ~~~ (s  ;; s2)) /\
@@ -269,7 +328,15 @@ Lemma eq_congruence (e : expr) (s s1 s2 : stmt) (EQ : s1 ~~~ s2) :
   (COND e THEN s  ELSE s1 END ~~~ COND e THEN s  ELSE s2 END) /\
   (COND e THEN s1 ELSE s  END ~~~ COND e THEN s2 ELSE s  END) /\
   (WHILE e DO s1 END ~~~ WHILE e DO s2 END).
-Proof. admit. Admitted.
+Proof. 
+  unfold bs_equivalent in *.
+  split; [ | split; [ | split; [ | split ] ] ].
+  - apply eq_congruence_seq_r. unfold bs_equivalent. eassumption.
+  - apply eq_congruence_seq_l. unfold bs_equivalent. eassumption.
+  - apply eq_congruence_cond_else. unfold bs_equivalent. eassumption.
+  - apply eq_congruence_cond_then. unfold bs_equivalent. eassumption.
+  - apply eq_congruence_while. unfold bs_equivalent. eassumption.
+Qed.
 
 (* Big-step semantics is deterministic *)
 Ltac by_eval_deterministic :=
@@ -288,7 +355,25 @@ Ltac eval_zero_not_one :=
 Lemma bs_int_deterministic (c c1 c2 : conf) (s : stmt)
       (EXEC1 : c == s ==> c1) (EXEC2 : c == s ==> c2) :
   c1 = c2.
-Proof. admit. Admitted.
+Proof. 
+  generalize dependent c2.
+  induction EXEC1.
+  all: intros.
+  all: inversion EXEC2; subst.
+  all: try by_eval_deterministic.
+  all: try eval_zero_not_one.
+  all: try reflexivity.
+  - apply IHEXEC1_1 in STEP1. subst. apply IHEXEC1_2 in STEP2. subst. reflexivity.
+  - specialize (IHEXEC1 c2). eapply bs_If_True in EXEC2.
+    + specialize (IHEXEC1 STEP). assumption.
+    + eassumption.
+  - specialize (IHEXEC1 c2). eapply bs_If_False in EXEC2.
+    + specialize (IHEXEC1 STEP). assumption.
+    + eassumption. 
+  - apply IHEXEC1_1 in STEP. subst. eapply IHEXEC1_2 in WSTEP. subst. reflexivity.  
+  Unshelve. exact s1. exact s1.
+Qed.
+
 
 Definition equivalent_states (s1 s2 : state Z) :=
   forall id, Expr.equivalent_states s1 s2 id.
