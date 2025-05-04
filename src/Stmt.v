@@ -8,6 +8,7 @@ Require Export State.
 Require Export Expr.
 
 From hahn Require Import HahnBase.
+Require Import Coq.Program.Equality.
 
 (* AST for statements *)
 Inductive stmt : Type :=
@@ -107,10 +108,14 @@ Definition contextual_equivalent (s1 s2 : stmt) :=
 Notation "s1 '~c~' s2" := (contextual_equivalent s1 s2) (at level 42, no associativity).
 
 Lemma contextual_equiv_stronger (s1 s2 : stmt) (H: s1 ~c~ s2) : s1 ~e~ s2.
-Proof. admit. Admitted.
+Proof. 
+  unfold eval_equivalent, contextual_equivalent in *.
+  apply (H Hole).
+Qed.
 
 Lemma eval_equiv_weaker : exists (s1 s2 : stmt), s1 ~e~ s2 /\ ~ (s1 ~c~ s2).
 Proof. admit. Admitted.
+
 
 (* Big step equivalence *)
 Definition bs_equivalent (s1 s2 : stmt) :=
@@ -136,37 +141,101 @@ Module SmokeTest.
   (* Associativity of sequential composition *)
   Lemma seq_assoc (s1 s2 s3 : stmt) :
     ((s1 ;; s2) ;; s3) ~~~ (s1 ;; (s2 ;; s3)).
-  Proof. admit. Admitted.
+  Proof. 
+    unfold bs_equivalent. intros c c'.
+    split.
+    - intro. seq_inversion. seq_inversion; econstructor.
+      + eassumption.
+      + apply bs_Seq with c'0; eassumption.
+    - intro. seq_inversion. seq_inversion; econstructor.
+      + econstructor; eassumption.
+      + assumption.
+  Qed.
   
   (* One-step unfolding *)
   Lemma while_unfolds (e : expr) (s : stmt) :
     (WHILE e DO s END) ~~~ (COND e THEN s ;; WHILE e DO s END ELSE SKIP END).
-  Proof. admit. Admitted.
-      
+  Proof. 
+    unfold bs_equivalent. intros.
+    split.
+    - intro. inversion H. subst. 
+      + econstructor.
+        * eassumption.
+        * econstructor; eassumption.
+      + apply bs_If_False.
+        * eassumption.
+        * econstructor; eassumption.
+    - intro. dependent destruction H. dependent destruction H.
+      + eapply bs_While_True; eassumption.
+      + inversion H. eapply bs_While_False; eassumption.
+  Qed.
+
+
   (* Terminating loop invariant *)
   Lemma while_false (e : expr) (s : stmt) (st : state Z)
         (i o : list Z) (c : conf)
         (EXE : c == WHILE e DO s END ==> (st, i, o)) :
     [| e |] st => Z.zero.
-  Proof. admit. Admitted.
+  Proof.
+    dependent induction EXE.
+    - specialize (IHEXE2 e s st i o). auto.
+    - assumption.
+  Qed.
   
   (* Big-step semantics does not distinguish non-termination from stuckness *)
   Lemma loop_eq_undefined :
     (WHILE (Nat 1) DO SKIP END) ~~~
     (COND (Nat 3) THEN SKIP ELSE SKIP END).
-  Proof. admit. Admitted.
+  Proof. 
+    unfold bs_equivalent. intros c c'.
+    split.
+    - intro. dependent induction H.
+      + assert (WHILE Nat 1 DO SKIP END = WHILE Nat 1 DO SKIP END) as Heq by reflexivity.
+        specialize (IHbs_int2 Heq).
+        inversion H. subst. assumption.      
+      + inversion CVAL.
+    - intro. dependent induction H; inversion CVAL.
+  Qed.
   
   (* Loops with equivalent bodies are equivalent *)
   Lemma while_eq (e : expr) (s1 s2 : stmt)
         (EQ : s1 ~~~ s2) :
     WHILE e DO s1 END ~~~ WHILE e DO s2 END.
-  Proof. admit. Admitted.
+  Proof. 
+    unfold bs_equivalent. intros c c'.
+    split.
+    - intro. dependent induction H.
+      + eapply bs_While_True.
+        * eassumption.
+        * apply EQ. eassumption.
+        * eapply IHbs_int2.
+          -- eassumption.
+          -- reflexivity.
+      + apply bs_While_False. eassumption.
+    - intro. dependent induction H.
+      + eapply bs_While_True.
+        * eassumption.
+        * apply EQ. eassumption.
+        * eapply IHbs_int2.
+          -- eassumption.
+          -- reflexivity.
+      + apply bs_While_False. eassumption.
+  Qed.
   
   (* Loops with the constant true condition don't terminate *)
   (* Exercise 4.8 from Winskel's *)
   Lemma while_true_undefined c s c' :
     ~ c == WHILE (Nat 1) DO s END ==> c'.
-  Proof. admit. Admitted.
+  Proof. 
+    intro.
+    (* remember (WHILE Nat 1 DO s END) as H' in H. *)
+    dependent induction H.
+    - specialize (IHbs_int2 s). 
+      assert (WHILE Nat 1 DO s END = WHILE Nat 1 DO s END) as Heq by reflexivity.
+      specialize (IHbs_int2 Heq).
+      assumption.
+    - inversion CVAL.
+  Qed.
   
 End SmokeTest.
 
