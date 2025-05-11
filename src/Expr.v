@@ -572,27 +572,39 @@ Module SmallStep.
   Qed.
 
   #[export] Hint Resolve ss_eval_binop : core.
-  
+
+  Lemma apply_step_to_eval s e e' z
+    (STEP : (s) |- e --> e')
+    (EVAL : [|e'|] s => z) :
+    [|e|] s => (z).
+  Proof.
+    dependent induction e.
+    - inversion STEP.
+    - inversion STEP. subst. eauto. inversion EVAL. subst. eauto.
+    - dependent induction b.
+      all: inversion STEP; subst.
+      all: inversion EVAL; subst.
+      all: eauto.
+  Qed.
+
   Lemma ss_eval_equiv (e : expr)
                       (s : state Z)
                       (z : Z) : [| e |] s => z <-> (s |- e -->> (Nat z)).
   Proof. 
     split.
-      - intro. generalize dependent z. induction e; intros.
-        + inversion H. subst. apply se_Stop.
-        + inversion H. subst. eapply se_Step.
-          * apply ss_Var. eassumption.
-          * apply se_Stop.
-        + inversion H; subst; specialize (IHe1 za VALA); specialize (IHe2 zb VALB); eapply ss_eval_binop; eassumption.
-      - intro. generalize dependent z. induction e; intros.
-        + inversion H; subst.
-          * apply bs_Nat.
-          * inversion HStep.
-        + inversion H; subst. inversion Heval; subst.
-          * inversion HStep. subst. apply bs_Var. assumption.
-          * inversion HStep. subst. apply bs_Var. inversion HStep0.
-        + admit.
-  Admitted.
+    - intro. generalize dependent z. 
+      dependent induction e.
+      + intros. inversion H. constructor.
+      + intros. inversion H. subst. eauto.
+      + intros. inversion H; subst; eauto.
+    - intro. dependent induction H.
+      + constructor.
+      + specialize (IHss_eval z).
+        assert (Nat z = Nat z) by reflexivity.
+        specialize (IHss_eval H0).
+        remember (apply_step_to_eval _ _ _ _ HStep IHss_eval).
+        assumption.
+  Qed.
   
 End SmallStep.
 
