@@ -8,6 +8,7 @@ Require Import List.
 Import ListNotations.
 
 From hahn Require Import HahnBase.
+Require Import Coq.Program.Equality.
 
 (* Type of binary operators *)
 Inductive bop : Type :=
@@ -349,7 +350,17 @@ Notation "e1 '~c~' e2" := (contextual_equivalent e1 e2)
 
 Lemma eq_eq_ceq (e1 e2 : expr) :
   e1 ~~ e2 <-> e1 ~c~ e2.
-Proof. admit. Admitted.
+Proof. 
+  split.
+  - intro. split; intros; generalize dependent n; induction C; intros.
+    + apply H in H0. assumption.
+    + inversion H0; subst. all: apply IHC in VALA. all: econstructor. all: eassumption.
+    + inversion H0; subst. all: apply IHC in VALB. all: econstructor. all: eassumption.
+    + apply H in H0. assumption.
+    + inversion H0; subst. all: apply IHC in VALA. all: econstructor. all: eassumption.
+    + inversion H0; subst. all: apply IHC in VALB. all: econstructor. all: eassumption.
+  - intro. split. all: (intros; apply (H Hole); assumption).
+Qed.
 
 Module SmallStep.
 
@@ -750,8 +761,37 @@ Module Renaming.
     - simpl. destruct a. destruct r. destruct r'. simpl. rewrite Hinv. rewrite IHst. reflexivity.
   Qed.
 
+  Lemma state_renameing_invariance (st : state Z) (r : renaming) :
+    forall (x : id) (z : Z), st / x => z <-> (rename_state r st) / (rename_id r x) => z.
+  Proof.
+    split.
+    - intros. induction H.
+      + simpl. destruct r. constructor.
+      + simpl. destruct r. constructor. 
+        * intro. unfold "<>" in *. apply H. eapply bijective_injective.
+          -- exact b.
+          -- eassumption.
+        * apply IHst_binds.
+    - intros. dependent induction H.
+      + dependent destruction r. dependent destruction st.
+        * inversion x0.
+        * dependent destruction p. dependent destruction x0. apply bijective_injective in b. apply b in x.
+         subst. constructor.
+      + dependent destruction r. simpl in H, H0, IHst_binds. dependent destruction st. 
+        * inversion x0.
+        * dependent destruction p. inversion x0. dependent destruction H2. constructor.
+          -- intro. apply H. rewrite H1. reflexivity.
+          -- eapply IHst_binds. all: reflexivity.
+  Qed.
+
   Lemma eval_renaming_invariance (e : expr) (st : state Z) (z : Z) (r: renaming) :
     [| e |] st => z <-> [| rename_expr r e |] (rename_state r st) => z.
-  Proof. admit. Admitted.
+  Proof. 
+    split.
+    - intros. induction H. all: econstructor. all: eauto.
+      + apply state_renameing_invariance. assumption.
+    - intros. dependent induction H. all: dependent destruction e. all: dependent destruction x. all: eauto.
+      + constructor. eapply state_renameing_invariance. eassumption.
+  Qed.
     
 End Renaming.
