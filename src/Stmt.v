@@ -498,7 +498,44 @@ Module SmallStep.
   
   Theorem bs_ss_eq (s : stmt) (c c' : conf) :
     c == s ==> c' <-> c -- s -->> c'.
-  Proof. admit. Admitted.
+  Proof. 
+    split; intros.
+      - dependent induction s.
+        + constructor. dependent destruction H. constructor.
+        + constructor. dependent destruction H. constructor. assumption.
+        + constructor. dependent destruction H. constructor.
+        + constructor. dependent destruction H. constructor. assumption.
+        + dependent destruction H. eapply ss_ss_composition.
+          * apply IHs1. eauto.
+          * apply IHs2. eauto.
+        + dependent destruction H. 
+          * eapply ss_int_Step. 
+            -- apply ss_If_True. assumption.
+            -- apply IHs1. assumption.
+          * eapply ss_int_Step. 
+            -- apply ss_If_False. assumption.
+            -- apply IHs2. assumption.
+        + dependent induction H.
+          * eapply ss_int_Step.
+            -- eapply ss_While.
+            -- eapply ss_int_Step.
+                apply ss_If_True. assumption.
+                eapply ss_ss_composition. apply IHs. eassumption. eapply IHbs_int2.
+                  assumption.
+                  reflexivity.
+          * eapply ss_int_Step.
+            -- eapply ss_While.
+            -- eapply ss_int_Step.
+                apply ss_If_False.
+                  assumption.
+                  constructor. constructor.
+      - dependent induction H.
+        + apply ss_bs_base. assumption.
+        + eapply ss_bs_step.
+          * apply H.
+          * assumption. 
+  Qed.
+
   
 End SmallStep.
 
