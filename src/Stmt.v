@@ -114,8 +114,30 @@ Proof.
 Qed.
 
 Lemma eval_equiv_weaker : exists (s1 s2 : stmt), s1 ~e~ s2 /\ ~ (s1 ~c~ s2).
-Proof. admit. Admitted.
-
+Proof. 
+  exists (Assn (Id 0) (Nat 0)), (Assn (Id 0) (Nat 1)).
+  split.
+  - unfold eval_equivalent. intros i o. split; intros H; unfold eval in *.
+    + exists [(Id 0, 1%Z)]. dependent destruction H. dependent destruction H. constructor. auto.
+    + exists [(Id 0, 0%Z)]. dependent destruction H. dependent destruction H. constructor. auto.
+  - unfold contextual_equivalent. intro.
+    remember (SeqL Hole (WRITE (Var (Id 0)))) as C.
+    unfold eval_equivalent in H.
+    specialize (H C ([]) ([1%Z])).
+    rewrite HeqC in *.
+    inversion H.
+    destruct H1.
+      + econstructor. econstructor.
+        * constructor. auto.
+        * constructor. constructor. constructor.
+      + inversion H1. subst.
+        inversion STEP1. subst.
+        inversion STEP2. subst.
+        inversion VAL. subst. 
+        inversion VAL0. subst.
+        inversion VAR. subst.
+        destruct H7. reflexivity.
+Qed.
 
 (* Big step equivalence *)
 Definition bs_equivalent (s1 s2 : stmt) :=
@@ -599,17 +621,52 @@ Module Renaming.
     - try eapply bs_While_True;  try rewrite <- Renaming.eval_renaming_invariance; eauto.
     - try eapply bs_While_False; try rewrite <- Renaming.eval_renaming_invariance; eauto.
   Qed.
-  
+
+  Lemma re_rename_conf
+    (r r' : Renaming.renaming)
+    (Hinv : Renaming.renamings_inv r r')
+    (c : conf) : rename_conf r (rename_conf r' c) = c.
+  Proof. 
+    destruct c.
+    destruct p.
+    simpl.
+    rewrite Renaming.re_rename_state.
+    - reflexivity.
+    - assumption.
+  Qed.
+
   Lemma renaming_invariant_bs_inv
     (s         : stmt)
     (r         : Renaming.renaming)
     (c c'      : conf)
     (Hbs       : (rename_conf r c) == rename r s ==> (rename_conf r c')) : c == s ==> c'.
-  Proof. admit. Admitted.
-
+  Proof.
+    remember (Renaming.renaming_inv r) as r'.
+    inversion r'.
+    apply renaming_invariant_bs with (r:=x) in Hbs.
+    rewrite re_rename in Hbs.
+    rewrite re_rename_conf in Hbs.
+    rewrite re_rename_conf in Hbs.
+    all: assumption.
+  Qed.
+    
     
   Lemma renaming_invariant (s : stmt) (r : renaming) : s ~e~ (rename r s).
-  Proof. admit. Admitted.
+  Proof. 
+    unfold eval_equivalent, eval in *.
+    split; intros.
+    - destruct H as [st H].
+      exists (Renaming.rename_state r st).
+      apply (renaming_invariant_bs s r ([], i, []) (st, [], o) H).
+    - destruct H as [st H].
+      remember (Renaming.renaming_inv2 r).
+      destruct e.
+      rewrite <- (re_rename_conf r x r0 (st, [], o)) in H.
+      apply (renaming_invariant_bs_inv s r ([], i, [])) in H.
+      simpl in H.
+      exists (Renaming.rename_state x st).
+      assumption.
+  Qed.
   
 End Renaming.
 
@@ -686,12 +743,20 @@ Proof. admit. Admitted.
 
 Lemma cps_bs (s1 s2 : stmt) (c c' : conf) (STEP : !s2 |- c -- !s1 --> c'):
    c == s1 ;; s2 ==> c'.
-Proof. admit. Admitted.
+Proof.
+  eapply cps_bs_gen.
+    - eassumption.
+    - constructor.
+Qed.
 
 Lemma cps_int_to_bs_int (c c' : conf) (s : stmt)
       (STEP : KEmpty |- c -- !(s) --> c') : 
   c == s ==> c'.
-Proof. admit. Admitted.
+Proof. 
+  eapply cps_bs_gen.
+  - eassumption.
+  - constructor.
+Qed.
 
 Lemma cps_cont_to_seq c1 c2 k1 k2 k3
       (STEP : (k2 @ k3 |- c1 -- k1 --> c2)) :
@@ -706,7 +771,11 @@ Proof. admit. Admitted.
 
 Lemma bs_int_to_cps_int st i o c' s (EXEC : (st, i, o) == s ==> c') :
   KEmpty |- (st, i, o) -- !s --> c'.
-Proof. admit. Admitted.
+Proof. 
+  eapply bs_int_to_cps_int_cont.
+    - eassumption.
+    - constructor. constructor.
+Qed.
 
 (* Lemma cps_stmt_assoc s1 s2 s3 s (c c' : conf) : *)
 (*   (! (s1 ;; s2 ;; s3)) |- c -- ! (s) --> (c') <-> *)
