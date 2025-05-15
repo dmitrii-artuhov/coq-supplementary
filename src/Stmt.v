@@ -407,7 +407,30 @@ Lemma bs_equiv_states
   (HE1          : equivalent_states st1 st1')  
   (H            : (st1, i, o) == s ==> (st2, i', o')) :
   exists st2',  equivalent_states st2 st2' /\ (st1', i, o) == s ==> (st2', i', o').
-Proof. admit. Admitted.
+Proof.
+  dependent induction H.
+  - exists st1'. split. 
+    + apply HE1.
+    + apply bs_Skip.
+  - exists (st1' [x <- z]). split.
+    + split.
+      * intro. dependent destruction H. constructor.
+        apply update_neq. symmetry. assumption. apply HE1. assumption.
+      * intro. dependent destruction H. constructor.
+        apply update_neq. symmetry. assumption. apply HE1. assumption.
+    + constructor. apply variable_relevance with st1. all: auto.
+  - exists (st1' [x <- z]). split.
+    + split.
+      * intro. dependent destruction H. constructor.
+        apply update_neq. symmetry. assumption. apply HE1. assumption.
+      * intro. dependent destruction H. constructor.
+        apply update_neq. symmetry. assumption. apply HE1. assumption.
+    + constructor.
+  - exists st1'. split.
+      * assumption.
+      * constructor. apply variable_relevance with st2. all: eauto.
+  - admit.
+Admitted.
   
 (* Contextual equivalence is equivalent to the semantic one *)
 (* TODO: no longer needed *)
@@ -743,20 +766,12 @@ Proof. admit. Admitted.
 
 Lemma cps_bs (s1 s2 : stmt) (c c' : conf) (STEP : !s2 |- c -- !s1 --> c'):
    c == s1 ;; s2 ==> c'.
-Proof.
-  eapply cps_bs_gen.
-    - eassumption.
-    - constructor.
-Qed.
+Proof. admit. Admitted.
 
 Lemma cps_int_to_bs_int (c c' : conf) (s : stmt)
       (STEP : KEmpty |- c -- !(s) --> c') : 
   c == s ==> c'.
-Proof. 
-  eapply cps_bs_gen.
-  - eassumption.
-  - constructor.
-Qed.
+Proof. admit. Admitted.
 
 Lemma cps_cont_to_seq c1 c2 k1 k2 k3
       (STEP : (k2 @ k3 |- c1 -- k1 --> c2)) :
@@ -771,11 +786,7 @@ Proof. admit. Admitted.
 
 Lemma bs_int_to_cps_int st i o c' s (EXEC : (st, i, o) == s ==> c') :
   KEmpty |- (st, i, o) -- !s --> c'.
-Proof. 
-  eapply bs_int_to_cps_int_cont.
-    - eassumption.
-    - constructor. constructor.
-Qed.
+Proof. admit. Admitted.
 
 (* Lemma cps_stmt_assoc s1 s2 s3 s (c c' : conf) : *)
 (*   (! (s1 ;; s2 ;; s3)) |- c -- ! (s) --> (c') <-> *)
